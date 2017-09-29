@@ -2,8 +2,11 @@ const Apify = require('apify');
 const request = require('request-promise');
 const mailgun = require('mailgun-js');
 const _ = require('underscore');
+const Validator = require('jsonschema').Validator;
 
-const DEFAULT_SAMPLE = 1000;
+
+const DEFAULT_SAMPLE_COUNT = 1000;
+const OUTPUT_KEY  = 'OUTPUT';
 
 const parseFinishWebhookData = (input) => {
     let data;
@@ -64,45 +67,86 @@ Apify.main(async () => {
     console.log('Execution:');
     console.dir(execution);
 
-    const errors = [];
-    const sample = finishWebhookData.sample || DEFAULT_SAMPLE;
+    const actOutput = {
+        errors: [],
+        executionAttrs: {},
+    };
+    const sampleCount = finishWebhookData.sampleCount || DEFAULT_SAMPLE_COUNT;
 
-    // Crawler status
+    // Check Crawler status
     if (execution.status !== "SUCCEEDED") {
-        errors.push(`Execution is not in SUCCEEDED status, crawler status: ${execution.status}`)
+        actOutput.errors.push(`Execution is not in SUCCEEDED status, crawler status: ${execution.status}`)
     }
 
-    const executionResultsSample = await getExecutionResultsSample(executionId, sample);
-    // Validate each result
-    executionResultsSample.items.forEach((result) => {
-        if (result.errorInfo) {
-            errors.push(`${result.url}: Crawler doesn't load page errorInfo: ${result.errorInfo}`);
+    const executionResultsSample = await getExecutionResultsSample(executionId, sampleCount);
+
+    // Validate results count
+    if (finishWebhookData.minOutputtedPages && executionResultsSample.total < finishWebhookData.minOutputtedPages) {
+        actOutput.errors.push(`Crawler returns only ${executionResultsSample.total} outputted pages and minumum is ${finishWebhookData.minOutputtedPages}`);
+    }
+
+    // Validate each result from sample
+    const validator = new Validator();
+    const existingAttrs = {};
+    executionResultsSample.items.forEach((item) => {
+        if (item.errorInfo) {
+            actOutput.errors.push(`${item.url}: Crawler doesn't load page errorInfo: ${item.errorInfo}`);
         }
+
+        // validate results again json schema
+        if (finishWebhookData.jsonSchema) {
+            const validation = validator.validate(item, finishWebhookData.jsonSchema);
+            if (!validation.valid) {
+                actOutput.errors.push(`${item.url}: json schema validate errors: ${validation.errors.join(',')}`);
+            }
+        }
+
+        // Save result attributes
+        Object.keys(item).forEach(key => {
+            if(item[key]) existingAttrs[key] = typeof item[key]
+        });
     });
-    // Validate results cout
-    if (finishWebhookData.minResults && executionResultsSample.total < finishWebhookData.minResults) {
-        errors.push(`Crawler returns only ${executionResultsSample.total} and minumum is ${finishWebhookData.minResults}`);
+    actOutput.executionAttrs = Object.keys(existingAttrs);
+
+    // Compare with previous check
+    if (finishWebhookData.compareWithPrevious) {
+        const actId = Apify.getEnv().actId;
+        const actRunId = Apify.getEnv().actRunId;
+        const actRuns = await Apify.client.acts.listRuns({ actId, desc: 1});
+        let previousRun;
+        let currentAcRun;
+        for (let actRun of actRuns.items) {
+            if (act.id === actRunId) currentAcRun = actRun;
+            if (currentAcRun && actRun.status === 'SUCCEEDED' && (new Date(actRun.startedAt) < new Date(actRun.startedAt))) {
+                previousRun = await Apify.client.acts.getRun({ actId, runId: actRun.id })
+            }
+        }
+        const previousRunOutput = await Apify.client.keyValueStores.getRecord({ storeId: previousRun.defaultKeyValueStoreId, key: OUTPUT_KEY });
+        const attributesDiff = previousRunOutput.executionAttrs.filter((i) => actOutput.executionAttrs.indexOf(i) < 0);
+        if (attributesDiff) {
+            actOutput.errors.push(`Crawler doesn't have all attributes as previous run, missing: ${attributesDiff.join(',')}`);
+        }
     }
 
     console.log('Errors found:');
-    errors.forEach(error => console.log(error));
+    actOutput.errors.forEach(error => console.log(error));
     // Save errors to output
-    await Apify.setValue('OUTPUT', errors);
+    await Apify.setValue(OUTPUT_KEY, actOutput);
     // Send mail with errors
-    if (errors.length && finishWebhookData.notifyTo) {
+    if (actOutput.errors.length && finishWebhookData.notifyTo) {
         const email = {
             to: finishWebhookData.notifyTo,
-            subject: `Apify notification: ${errors.length} errors in crawler execution id ${executionId}`,
+            subject: `Apify notification: ${actOutput.errors.length} errors in crawler execution id ${executionId}`,
             text: `Hi there,\n` +
             `\n` +
             `This is automatic notification from Apify crawlers.\n` +
-            `We found ${errors.length} errors in crawler execution id ${executionId}.\n` +
+            `We found ${actOutput.errors.length} errors in crawler execution id ${executionId}.\n` +
             `\n` +
             `Execution detail: https://api.apifier.com/v1/execs/${executionId}\n` +
             `Execution results: https://api.apifier.com/v1/execs/${executionId}/results\n` +
             `\n` +
             `Errors log:\n` +
-            errors.join('\n') +
+            actOutput.errors.join('\n') +
             `\n` +
             `Happy Crawling`,
         };
@@ -114,4 +158,5 @@ Apify.main(async () => {
             }
         });
     }
+    console.log('Act finished');
 });

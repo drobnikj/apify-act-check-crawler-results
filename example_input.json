@@ -1,0 +1,28 @@
+{
+  "_id": "SHdZnMvPwqsNJdmZu",
+  "actId": "K2NC4ZwarAHb6KtEq",
+  "data": {
+    "notifyTo": "jakub.drobnik@apifier.com",
+    "minOutputtedPages": 100000,
+    "jsonSchema": {
+      "title": "Result",
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "priceOriginal": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "price": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "desctiption"
+      ]
+    }
+  }
+}
