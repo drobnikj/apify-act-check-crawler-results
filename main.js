@@ -116,7 +116,7 @@ Apify.main(async () => {
         let currentAcExecution;
         for (let exec of executions.items) {
             if (exec._id === executionId) currentAcExecution = exec;
-            if (currentAcExecution && currentAcExecution.tag === exec.tag && (new Date(currentAcExecution.startedAt) < new Date(exec.startedAt))) {
+            if (currentAcExecution && currentAcExecution.tag === exec.tag && (new Date(exec.startedAt) < new Date(currentAcExecution.startedAt))) {
                 previousExecution = exec;
                 break;
             }
@@ -132,8 +132,8 @@ Apify.main(async () => {
             });
             previousExecutionAtts = Object.keys(previousExecutionAtts);
             const attributesDiff = previousExecutionAtts.filter((i) => actOutput.executionAttrs.indexOf(i) < 0);
-            if (attributesDiff) {
-                actOutput.errors.push(`Crawler doesn't have all attributes as previous run, missing: ${attributesDiff.join(',')}`);
+            if (attributesDiff.length) {
+                actOutput.errors.push(`Crawler doesn't have all attributes as previous run, missing ${attributesDiff.length} attributes: ${attributesDiff.join(',')}`);
             }
         } else {
             actOutput.errors.push(`Previous execution with tag ${execution.tag} not found.`);
