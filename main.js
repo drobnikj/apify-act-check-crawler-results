@@ -62,6 +62,7 @@ Apify.main(async () => {
     console.dir(finishWebhookData);
 
     const executionId = input._id;
+    const crawlerId = input.actId;
     const execution = await Apify.client.crawlers.getExecutionDetails({ executionId });
     if (!execution) throw new Error('execution-not-exists');
     console.log('Execution:');
@@ -109,22 +110,33 @@ Apify.main(async () => {
     actOutput.executionAttrs = Object.keys(existingAttrs);
 
     // Compare with previous check
-    if (finishWebhookData.compareWithPrevious) {
-        const actId = Apify.getEnv().actId;
-        const actRunId = Apify.getEnv().actRunId;
-        const actRuns = await Apify.client.acts.listRuns({ actId, desc: 1});
-        let previousRun;
-        let currentAcRun;
-        for (let actRun of actRuns.items) {
-            if (act.id === actRunId) currentAcRun = actRun;
-            if (currentAcRun && actRun.status === 'SUCCEEDED' && (new Date(actRun.startedAt) < new Date(actRun.startedAt))) {
-                previousRun = await Apify.client.acts.getRun({ actId, runId: actRun.id })
+    if (finishWebhookData.compareWithPreviousExecution) {
+        const executions = await Apify.client.crawlers.getListOfExecutions({ crawlerId, desc: 1 });
+        let previousExecution;
+        let currentAcExecution;
+        for (let exec of executions.items) {
+            if (exec._id === executionId) currentAcExecution = exec;
+            if (currentAcExecution && currentAcExecution.tag === exec.tag && (new Date(currentAcExecution.startedAt) < new Date(exec.startedAt))) {
+                previousExecution = exec;
+                break;
             }
         }
-        const previousRunOutput = await Apify.client.keyValueStores.getRecord({ storeId: previousRun.defaultKeyValueStoreId, key: OUTPUT_KEY });
-        const attributesDiff = previousRunOutput.executionAttrs.filter((i) => actOutput.executionAttrs.indexOf(i) < 0);
-        if (attributesDiff) {
-            actOutput.errors.push(`Crawler doesn't have all attributes as previous run, missing: ${attributesDiff.join(',')}`);
+        if (previousExecution) {
+            const previousExecutionResults = await getExecutionResultsSample(previousExecution._id, sampleCount);
+            let previousExecutionAtts = {};
+            previousExecutionResults.items.forEach((item) => {
+                // Save result attributes
+                Object.keys(item).forEach(key => {
+                    if(item[key]) previousExecutionAtts[key] = typeof item[key]
+                });
+            });
+            previousExecutionAtts = Object.keys(previousExecutionAtts);
+            const attributesDiff = previousExecutionAtts.filter((i) => actOutput.executionAttrs.indexOf(i) < 0);
+            if (attributesDiff) {
+                actOutput.errors.push(`Crawler doesn't have all attributes as previous run, missing: ${attributesDiff.join(',')}`);
+            }
+        } else {
+            actOutput.errors.push(`Previous execution with tag ${execution.tag} not found.`);
         }
     }
 
