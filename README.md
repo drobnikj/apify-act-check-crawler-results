@@ -1,6 +1,6 @@
 # apify-act-check-crawler-results
 This act checks crawler results and send notification if finds some errors.
-It is designed to run from [crawler finish webhook](https://www.apifier.com/docs#finishWebhookUrl).
+It is designed to run from [crawler finish webhook](https://www.apify.com/docs#crawler-finishWebhookUrl).
 
 ## Usage
 
@@ -8,7 +8,7 @@ For a specific crawler set the following parameters:
 
 ### Finish webhook URL (`finishWebhookUrl`)
 ```
-https://api.apifier.com/v2/acts/drobnikj~check-crawler-results/runs?token=APIFIER_API_TOKEN
+https://api.apify.com/v2/acts/drobnikj~check-crawler-results/runs?token=APIFY_API_TOKEN
 ```
 
 ### Finish webhook data
