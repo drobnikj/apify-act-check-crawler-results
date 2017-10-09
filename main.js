@@ -162,13 +162,7 @@ Apify.main(async () => {
             `\n` +
             `Happy Crawling`,
         };
-        await Apify.call({
-            actId: 'apify/send-mail',
-            input: {
-                contentType: 'application/json',
-                body: JSON.stringify(email),
-            }
-        });
+        await Apify.call('apify/send-mail', email);
     }
     console.log('Act finished');
 });
