@@ -1,6 +1,4 @@
 const Apify = require('apify');
-const request = require('request-promise');
-const mailgun = require('mailgun-js');
 const _ = require('underscore');
 const Validator = require('jsonschema').Validator;
 
