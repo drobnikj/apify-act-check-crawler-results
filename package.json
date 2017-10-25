@@ -1,0 +1,24 @@
+{
+  "name": "apify-act-check-crawler-results",
+  "version": "1.0.0",
+  "description": "This act checks crawler results and send notification if finds some errors. It is designed to run from [crawler finish webhook](https://www.apify.com/docs#crawler-finishWebhookUrl).",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/drobnikj/apify-act-check-crawler-results.git"
+  },
+  "author": "Jakub Drobnik",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/drobnikj/apify-act-check-crawler-results/issues"
+  },
+  "homepage": "https://github.com/drobnikj/apify-act-check-crawler-results#readme",
+  "dependencies": {
+    "apify": "^0.4.29",
+    "jsonschema": "^1.2.0",
+    "underscore": "^1.8.3"
+  }
+}
