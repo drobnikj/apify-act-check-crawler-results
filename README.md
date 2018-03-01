@@ -34,4 +34,23 @@ https://api.apify.com/v2/acts/drobnikj~check-crawler-results/runs?token=APIFY_AP
 - If compareWithPreviousExecution is set to `true` act compare results with previous execution.
 - If `tag` for execution is set compare act result from previous results with same tag.
 
+#### `runActOnSuccess`
+- Object
+- If act found errors runs this act.
+- Example:
+```javascript
+{
+    "id": "apify/send-mail",
+    "input": {
+        "to": "jakub.drobnik@apify.com",
+        "subject": "test on success",
+        "text": "No errors in crawler Amazon"
+    }
+}
+```
+
+#### `runActOnError`
+- Object
+- If didn't find any errors runs this act.
+- Same format as `runActOnSuccess`
 

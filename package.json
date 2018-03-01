@@ -4,7 +4,8 @@
   "description": "This act checks crawler results and send notification if finds some errors. It is designed to run from [crawler finish webhook](https://www.apify.com/docs#crawler-finishWebhookUrl).",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "run-local": "APIFY_DEV_KEY_VALUE_STORE_DIR=./kvs-local/ node main.js"
   },
   "repository": {
     "type": "git",

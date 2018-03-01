@@ -143,24 +143,35 @@ Apify.main(async () => {
     // Save errors to output
     await Apify.setValue(OUTPUT_KEY, actOutput);
     // Send mail with errors
-    if (actOutput.errors.length && finishWebhookData.notifyTo) {
-        const email = {
-            to: finishWebhookData.notifyTo,
-            subject: `Apify notification: ${actOutput.errors.length} errors in crawler execution id ${executionId}`,
-            text: `Hi there,\n` +
-            `\n` +
-            `This is automatic notification from Apify crawlers.\n` +
-            `We found ${actOutput.errors.length} errors in crawler execution id ${executionId}.\n` +
-            `\n` +
-            `Execution detail: https://api.apifier.com/v1/execs/${executionId}\n` +
-            `Execution results: https://api.apifier.com/v1/execs/${executionId}/results\n` +
-            `\n` +
-            `Errors log:\n` +
-            actOutput.errors.join('\n') +
-            `\n` +
-            `Happy Crawling`,
-        };
-        await Apify.call('apify/send-mail', email);
+    if (actOutput.errors.length) {
+        if (finishWebhookData.notifyTo) {
+            const email = {
+                to: finishWebhookData.notifyTo,
+                subject: `Apify notification: ${actOutput.errors.length} errors in crawler execution id ${executionId}`,
+                text: `Hi there,\n` +
+                `\n` +
+                `This is automatic notification from Apify crawlers.\n` +
+                `We found ${actOutput.errors.length} errors in crawler execution id ${executionId}.\n` +
+                `\n` +
+                `Execution detail: https://api.apifier.com/v1/execs/${executionId}\n` +
+                `Execution results: https://api.apifier.com/v1/execs/${executionId}/results\n` +
+                `\n` +
+                `Errors log:\n` +
+                actOutput.errors.join('\n') +
+                `\n` +
+                `Happy Crawling`,
+            };
+            await Apify.call('apify/send-mail', email);
+        }
+        if (finishWebhookData.runActOnError && finishWebhookData.runActOnError.id) {
+            const actInput = (finishWebhookData.runActOnError.input) ? finishWebhookData.runActOnError.input : Object.assign({}, input, actOutput);
+            await Apify.call(finishWebhookData.runActOnError.id, actInput);
+        }
+    } else {
+        if (finishWebhookData.runActOnSuccess && finishWebhookData.runActOnSuccess.id) {
+            const actInput = (finishWebhookData.runActOnSuccess.input) ? finishWebhookData.runActOnSuccess.input : Object.assign({}, input, actOutput);
+            await Apify.call(finishWebhookData.runActOnSuccess.id, actInput);
+        }
     }
     console.log('Act finished');
 });
