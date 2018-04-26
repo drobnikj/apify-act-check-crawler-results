@@ -3,15 +3,16 @@ node_js:
   - "8"
 script:
   - npm test
-  - npm install apify-cli -g
+  - npm install apify-cli
+  - bash apify login --token $APIFY_TOKEN
 deploy:
   # deploy develop to the staging environment
   - provider: script
-    script: bash apify login --token $APIFY_TOKEN && apify push --build-tag beta
+    script: bash apify push --build-tag beta
     on:
       branch: develop
   # deploy master to production
   - provider: script
-    script: apify login --token $APIFY_TOKEN && bash apify push --build-tag latest
+    script: bash apify push --build-tag latest
     on:
       branch: master
