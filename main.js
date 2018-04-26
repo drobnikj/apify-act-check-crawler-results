@@ -6,10 +6,10 @@ const Validator = require('jsonschema').Validator;
 const DEFAULT_SAMPLE_COUNT = 1000;
 const OUTPUT_KEY  = 'OUTPUT';
 
-const parseFinishWebhookData = (input) => {
+const parseFinishWebhookData = (json) => {
     let data;
     try {
-        data = input.data ? JSON.parse(input.data) : {};
+        data = json ? JSON.parse(json) : {};
     } catch (e) {
         console.log(`Cannot parse finishWebhookData as JSON ${input.data}`);
     }
@@ -50,53 +50,95 @@ const getExecutionResultsSample = async (executionId, sample) => {
     return result;
 };
 
+const getItemsSample = async (datasetId, sample) => {
+    const result = {
+        total: 0,
+        items: [],
+    };
+    let limit = 1000;
+    let offset = 0;
+    let paginationList;
+    while (result.items.length <= sample) {
+        paginationList = await Apify.client.datasets.getItems({
+            datasetId,
+            limit,
+            offset,
+        });
+        result.total = parseInt(paginationList.total);
+        console.log(`Get items from datasetId: ${datasetId}, offset: ${paginationList.offset}`);
+        result.items.push(...paginationList.items);
+        if (parseInt(paginationList.count) === 0) break;
+        offset = offset + limit;
+    }
+    return result;
+};
+
 Apify.main(async () => {
     // Get input of your act
     const input = await Apify.getValue('INPUT');
-    const finishWebhookData = parseFinishWebhookData(input);
-    //if (checkFinishWebhookData(finishWebhookData)) throw new Error('invalid-input-data');
-
-    console.log('Finish webhook data:');
-    console.dir(finishWebhookData);
-
-    const executionId = input._id;
-    const crawlerId = input.actId;
-    const execution = await Apify.client.crawlers.getExecutionDetails({ executionId });
-    if (!execution) throw new Error('execution-not-exists');
-    console.log('Execution:');
-    console.dir(execution);
-
+    const { actId, runId, data, _id } = input;
+    let options = input.options || {};
+    let sample;
     const actOutput = {
         errors: [],
         executionAttrs: {},
     };
-    const sampleCount = finishWebhookData.sampleCount || DEFAULT_SAMPLE_COUNT;
+    const sampleCount = options.sampleCount || DEFAULT_SAMPLE_COUNT;
+    let crawlerId; let executionId;
 
-    // Check Crawler status
-    if (execution.status !== "SUCCEEDED") {
-        actOutput.errors.push(`Execution is not in SUCCEEDED status, crawler status: ${execution.status}`)
+    console.log('Options:');
+
+    if (actId && runId) {
+        // Call from other act
+        console.dir(options);
+        const { defaultDatasetId, status } = await Apify.client.acts.getRun({ actId, runId });
+        if (!defaultDatasetId) throw new Error(`No defaultDatasetId from actRun runId: ${runId}, actId: ${actId}`);
+
+        if (status !== "SUCCEEDED") {
+            actOutput.errors.push(`Run is not in SUCCEEDED status, act status: ${status}`)
+        }
+
+        sample = await getItemsSample(defaultDatasetId, sampleCount);
+    } else if (_id && actId) {
+        // Call from crawler
+        if (data) options = parseFinishWebhookData(data) || {};
+        console.dir(options);
+
+        executionId = _id;
+        crawlerId = actId;
+        const execution = await Apify.client.crawlers.getExecutionDetails({ executionId });
+        if (!execution) throw new Error('execution-not-exists');
+
+        console.log('Execution:');
+        console.dir(execution);
+
+        // Check Crawler status
+        if (execution.status !== "SUCCEEDED") {
+            actOutput.errors.push(`Execution is not in SUCCEEDED status, crawler status: ${execution.status}`)
+        }
+
+        sample = await getExecutionResultsSample(executionId, sampleCount);
     }
 
-    const executionResultsSample = await getExecutionResultsSample(executionId, sampleCount);
-
     // Validate results count
-    if (finishWebhookData.minOutputtedPages && executionResultsSample.total < finishWebhookData.minOutputtedPages) {
-        actOutput.errors.push(`Crawler returns only ${executionResultsSample.total} outputted pages and minumum is ${finishWebhookData.minOutputtedPages}`);
+    if (options.minOutputtedPages && sample.total < options.minOutputtedPages) {
+        actOutput.errors.push(`Crawler returns only ${sample.total} outputted pages and minumum is ${options.minOutputtedPages}`);
     }
 
     // Validate each result from sample
     const validator = new Validator();
     const existingAttrs = {};
-    executionResultsSample.items.forEach((item) => {
-        if (item.errorInfo) {
-            actOutput.errors.push(`${item.url}: Crawler doesn't load page errorInfo: ${item.errorInfo}`);
+    sample.items.forEach((item, index) => {
+        const lineKey = item.url ? item.url : `Line: ${index}`;
+        if (item.errorInfo || item.errors) {
+            actOutput.errors.push(`${lineKey}: Crawler doesn't load page errorInfo: ${item.errorInfo || item.errors}`);
         }
 
         // validate results again json schema
-        if (finishWebhookData.jsonSchema) {
-            const validation = validator.validate(item, finishWebhookData.jsonSchema);
+        if (options.jsonSchema) {
+            const validation = validator.validate(item, options.jsonSchema);
             if (!validation.valid) {
-                actOutput.errors.push(`${item.url}: json schema validate errors: ${validation.errors.join(',')}`);
+                actOutput.errors.push(`${lineKey}: json schema validate errors: ${validation.errors.join(',')}`);
             }
         }
 
@@ -107,8 +149,8 @@ Apify.main(async () => {
     });
     actOutput.executionAttrs = Object.keys(existingAttrs);
 
-    // Compare with previous check
-    if (finishWebhookData.compareWithPreviousExecution) {
+    // Compare with previous check only for crawler
+    if (options.compareWithPreviousExecution && crawlerId) {
         const executions = await Apify.client.crawlers.getListOfExecutions({ crawlerId, desc: 1 });
         let previousExecution;
         let currentAcExecution;
@@ -144,9 +186,9 @@ Apify.main(async () => {
     await Apify.setValue(OUTPUT_KEY, actOutput);
     // Send mail with errors
     if (actOutput.errors.length) {
-        if (finishWebhookData.notifyTo) {
+        if (options.notifyTo) {
             const email = {
-                to: finishWebhookData.notifyTo,
+                to: options.notifyTo,
                 subject: `Apify notification: ${actOutput.errors.length} errors in crawler execution id ${executionId}`,
                 text: `Hi there,\n` +
                 `\n` +
@@ -163,14 +205,14 @@ Apify.main(async () => {
             };
             await Apify.call('apify/send-mail', email);
         }
-        if (finishWebhookData.runActOnError && finishWebhookData.runActOnError.id) {
-            const actInput = (finishWebhookData.runActOnError.input) ? finishWebhookData.runActOnError.input : Object.assign({}, input, actOutput);
-            await Apify.call(finishWebhookData.runActOnError.id, actInput);
+        if (options.runActOnError && options.runActOnError.id) {
+            const actInput = (options.runActOnError.input) ? options.runActOnError.input : Object.assign({}, input, actOutput);
+            await Apify.call(options.runActOnError.id, actInput);
         }
     } else {
-        if (finishWebhookData.runActOnSuccess && finishWebhookData.runActOnSuccess.id) {
-            const actInput = (finishWebhookData.runActOnSuccess.input) ? finishWebhookData.runActOnSuccess.input : Object.assign({}, input, actOutput);
-            await Apify.call(finishWebhookData.runActOnSuccess.id, actInput);
+        if (options.runActOnSuccess && options.runActOnSuccess.id) {
+            const actInput = (options.runActOnSuccess.input) ? options.runActOnSuccess.input : Object.assign({}, input, actOutput);
+            await Apify.call(options.runActOnSuccess.id, actInput);
         }
     }
     console.log('Act finished');
