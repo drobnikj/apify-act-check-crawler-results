@@ -2,7 +2,7 @@ language: node_js
 node_js:
   - "8"
 before_script:
-    - npm install apify-cli
+    - npm install apify-cli -g
 script:
   - npm test
   - apify login --token $APIFY_TOKEN
