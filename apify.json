@@ -1,0 +1,11 @@
+{
+	"name": "check-crawler-results",
+	"actId": "47jcXYwr4BwfG4ogG",
+	"version": {
+		"versionNumber": "0.1",
+		"buildTag": "beta",
+		"envVars": [],
+		"sourceType": "TARBALL",
+		"tarballUrl": "https://api.apify.com/v2/key-value-stores/6XZutKX8JEQnXctEF/records/check-crawler-results-0.1.zip?disableRedirect=true"
+	}
+}
