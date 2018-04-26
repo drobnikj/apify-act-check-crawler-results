@@ -3,16 +3,17 @@ node_js:
   - "8"
 before_script:
     - npm install apify-cli -g
+    - apify login --token $APIFY_TOKEN
 script:
+  # run on each commit
   - npm test
-  - apify login --token $APIFY_TOKEN
 deploy:
-  # deploy develop to the staging environment
+  # deploy develop as beta tag act
   - provider: script
     script: apify push --build-tag beta
     on:
       branch: develop
-  # deploy master to production
+  # deploy master as latest tag act
   - provider: script
     script: apify push --build-tag latest
     on:
