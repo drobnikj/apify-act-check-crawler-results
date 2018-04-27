@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/drobnikj/apify-act-check-crawler-results#readme",
   "dependencies": {
-    "apify": "^0.5.25",
+    "apify": "^0.5.27",
     "jsonschema": "^1.2.4",
     "npm": "^6.0.0",
     "underscore": "^1.9.0"
