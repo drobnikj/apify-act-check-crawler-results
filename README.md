@@ -61,7 +61,7 @@ NOTE: If you didn't set `input`, it set from input of main act and errors output
 
 ## Usage Act
 
-You can all it from other Act, for example:
+You can call it from other Act, for example:
 ```javascript
 await Apify.call('drobnikj/check-crawler-results', {
     actId: 's7Jj8ik07gfV',
@@ -72,15 +72,15 @@ await Apify.call('drobnikj/check-crawler-results', {
 });
 ```
 
-### actId
+### `actId`
 - String
 - Act ID you want to check
 
-### runId
+### `runId`
 - String
 - Run ID of act you want to check
 
-### options
+### `options`
 - Object
 - Options for checking
 - There are same params as in `Finish webhook data` except `compareWithPreviousExecution`
