@@ -48,6 +48,8 @@ https://api.apify.com/v2/acts/drobnikj~check-crawler-results/runs?token=APIFY_AP
     }
 }
 ```
+NOTE: If you didn't set `input`, it set from input of main act and errors output.
+
 
 #### `runActOnError`
 - Object
