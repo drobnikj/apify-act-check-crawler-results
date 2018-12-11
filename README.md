@@ -80,6 +80,10 @@ await Apify.call('drobnikj/check-crawler-results', {
 - String
 - Run ID of act you want to check
 
+### `datasetId`
+- String
+- Dataset ID
+
 ### `options`
 - Object
 - Options for checking
