@@ -134,8 +134,8 @@ Apify.main(async () => {
     const existingAttrs = {};
     sample.items.forEach((item, index) => {
         const lineKey = item.url ? item.url : `Line: ${index}`;
-        if (item.errorInfo || item.errors) {
-            actOutput.errors.push(`${lineKey}: Crawler doesn't load page errorInfo: ${item.errorInfo || item.errors}`);
+        if (item.errorInfo || item.errors || item.error) {
+            actOutput.errors.push(`${lineKey}: Crawler doesn't load page errorInfo: ${item.errorInfo || item.errors || item.error}`);
         }
 
         // validate results again json schema

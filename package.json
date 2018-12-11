@@ -4,6 +4,7 @@
   "description": "This act checks crawler results and send notification if finds some errors. It is designed to run from [crawler finish webhook](https://www.apify.com/docs#crawler-finishWebhookUrl).",
   "main": "main.js",
   "scripts": {
+    "start": "node main.js",
     "test": "mocha"
   },
   "repository": {
@@ -17,9 +18,9 @@
   },
   "homepage": "https://github.com/drobnikj/apify-act-check-crawler-results#readme",
   "dependencies": {
-    "apify": "^0.5.27",
+    "apify": "^0.9.15",
     "jsonschema": "^1.2.4",
-    "npm": "^6.0.0",
+    "npm": "^6.5.0",
     "underscore": "^1.9.0"
   },
   "devDependencies": {
