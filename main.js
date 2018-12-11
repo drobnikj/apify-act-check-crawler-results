@@ -76,7 +76,7 @@ const getItemsSample = async (datasetId, sample) => {
 Apify.main(async () => {
     // Get input of your act
     const input = await Apify.getValue('INPUT');
-    const { actId, runId, data, _id } = input;
+    const { actId, runId, data, _id, datasetId } = input;
     let options = input.options || {};
     let sample;
     const actOutput = {
@@ -118,6 +118,10 @@ Apify.main(async () => {
         }
 
         sample = await getExecutionResultsSample(executionId, sampleCount);
+    } else if (datasetId) {
+        // Call just with datasetId
+        console.dir(options);
+        sample = await getItemsSample(datasetId, sampleCount);
     }
 
     // Validate results count
