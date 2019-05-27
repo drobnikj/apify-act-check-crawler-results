@@ -93,10 +93,14 @@ Apify.main(async () => {
 
     console.log('Options:');
 
+    let defaultDatasetId;
     if (actId && runId) {
         // Call from other act
         console.dir(options);
-        const { defaultDatasetId, status } = await Apify.client.acts.getRun({ actId, runId });
+        const actorRun = await Apify.client.acts.getRun({ actId, runId });
+        const { status } = actorRun;
+        defaultDatasetId = actorRun.defaultDatasetId;
+
         if (!defaultDatasetId) throw new Error(`No defaultDatasetId from actRun runId: ${runId}, actId: ${actId}`);
 
         if (status !== "SUCCEEDED") {

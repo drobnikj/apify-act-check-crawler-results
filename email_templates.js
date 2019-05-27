@@ -11,7 +11,7 @@ const crawlerExecutionEmail = (actOutput, executionId) => {
             `\n` +
             `Errors log:\n` +
             actOutput.errors.join('\n') +
-            `\n` +
+            `\n\n` +
             `Happy Crawling`,
     }
 };
@@ -25,12 +25,12 @@ const datasetEmail = (actOutput, datasetId) => {
             `This is automatic notification from Apify Datasets.\n` +
             `We found ${actOutput.errors.length} errors in dataset id ${datasetId}.\n` +
             `\n` +
-            `Execution detail: https://api.apify.com/v2/datasets/${datasetId}\n` +
+            `Dataset detail: https://api.apify.com/v2/datasets/${datasetId}\n` +
             `Dataset items: https://api.apify.com/v2/datasets/${datasetId}/items?format=json\n` +
             `\n` +
             `Errors log:\n` +
             actOutput.errors.join('\n') +
-            `\n` +
+            `\n\n` +
             `Happy Crawling`,
     }
 };
@@ -48,7 +48,7 @@ const actorEmail = (actOutput, actorId, runId, datasetId) => {
             `\n` +
             `Errors log:\n` +
             actOutput.errors.join('\n') +
-            `\n` +
+            `\n\n` +
             `Happy Crawling`,
     }
 };
