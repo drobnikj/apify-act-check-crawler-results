@@ -1,6 +1,11 @@
 const Apify = require('apify');
 const _ = require('underscore');
 const Validator = require('jsonschema').Validator;
+const {
+    crawlerExecutionEmail,
+    datasetEmail,
+    actorEmail,
+} = require('./email_templates');
 
 
 const DEFAULT_SAMPLE_COUNT = 1000;
@@ -76,7 +81,7 @@ const getItemsSample = async (datasetId, sample) => {
 Apify.main(async () => {
     // Get input of your act
     const input = await Apify.getValue('INPUT');
-    const { actId, runId, data, _id } = input;
+    const { actId, runId, data, _id, datasetId } = input;
     let options = input.options || {};
     let sample;
     const actOutput = {
@@ -118,6 +123,12 @@ Apify.main(async () => {
         }
 
         sample = await getExecutionResultsSample(executionId, sampleCount);
+    } else if (datasetId) {
+        // Call just with datasetId
+        console.dir(options);
+        sample = await getItemsSample(datasetId, sampleCount);
+    } else {
+        throw new Error('Can not input type.');
     }
 
     // Validate results count
@@ -130,8 +141,8 @@ Apify.main(async () => {
     const existingAttrs = {};
     sample.items.forEach((item, index) => {
         const lineKey = item.url ? item.url : `Line: ${index}`;
-        if (item.errorInfo || item.errors) {
-            actOutput.errors.push(`${lineKey}: Crawler doesn't load page errorInfo: ${item.errorInfo || item.errors}`);
+        if (item.errorInfo || item.errors || item.error) {
+            actOutput.errors.push(`${lineKey}: Crawler doesn't load page errorInfo: ${item.errorInfo || item.errors || item.error}`);
         }
 
         // validate results again json schema
@@ -187,21 +198,19 @@ Apify.main(async () => {
     // Send mail with errors
     if (actOutput.errors.length) {
         if (options.notifyTo) {
-            const email = {
+            let emailTexts = {};
+            if (actId && runId) {
+                emailTexts = actorEmail(actOutput, actId, runId, defaultDatasetId);
+            } else if (_id && actId) {
+                emailTexts = crawlerExecutionEmail(actOutput, executionId);
+            } else if (datasetId) {
+                emailTexts = crawlerExecutionEmail(actOutput, datasetId);
+            } else {
+                throw new Error('Can not find email template.');
+            }
+            const emailSettings = {
                 to: options.notifyTo,
-                subject: `Apify notification: ${actOutput.errors.length} errors in crawler execution id ${executionId}`,
-                text: `Hi there,\n` +
-                `\n` +
-                `This is automatic notification from Apify crawlers.\n` +
-                `We found ${actOutput.errors.length} errors in crawler execution id ${executionId}.\n` +
-                `\n` +
-                `Execution detail: https://api.apifier.com/v1/execs/${executionId}\n` +
-                `Execution results: https://api.apifier.com/v1/execs/${executionId}/results\n` +
-                `\n` +
-                `Errors log:\n` +
-                actOutput.errors.join('\n') +
-                `\n` +
-                `Happy Crawling`,
+                ...emailTexts,
             };
             await Apify.call('apify/send-mail', email);
         }
