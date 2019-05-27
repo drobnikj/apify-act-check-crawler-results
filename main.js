@@ -204,11 +204,11 @@ Apify.main(async () => {
             } else if (_id && actId) {
                 emailTexts = crawlerExecutionEmail(actOutput, executionId);
             } else if (datasetId) {
-                emailTexts = crawlerExecutionEmail(actOutput, datasetId);
+                emailTexts = datasetEmail(actOutput, datasetId);
             } else {
                 throw new Error('Can not find email template.');
             }
-            const emailSettings = {
+            const email = {
                 to: options.notifyTo,
                 ...emailTexts,
             };
