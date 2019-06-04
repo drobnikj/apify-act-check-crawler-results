@@ -1,67 +1,42 @@
-# apify-act-check-crawler-results
-This act checks crawler results or default act dataset items and send notification if finds some errors.
-It is designed to run from [crawler finish webhook](https://www.apify.com/docs#crawler-finishWebhookUrl).
+# Crawler results checker for Apify
+This actor checks crawler/scraper default dataset items and sends a notification if finds some errors.
+It is designed to run from webhook.
 
-## Usage Crawler
+  * [Usage](#usage)
+    * [Actor/Task webhook](#actor-or-task-webhook)
+    * [Actor](#actor)
+    * [Legacy Crawler DEPRECATED](#legacy-crawler-DEPRECATED)
+  * [Fields](#fields)
+    * [actId](#actid)
+    * [runId](#runid)
+    * [datasetId](#datasetid)
+    * [options](#options)
+  * [Output](#output)
 
-For a specific crawler set the following parameters:
+# Usage
 
-### Finish webhook URL (`finishWebhookUrl`)
+## Actor or Task webhook
+
+You can set up webhook for Actor or Task with URL:
 ```
 https://api.apify.com/v2/acts/drobnikj~check-crawler-results/runs?token=APIFY_API_TOKEN
 ```
 
-### Finish webhook data
-
-#### `sampleCount`
-- Number
-- Number of results that act checks
-- Default is 1000
-
-
-#### `minOutputtedPages`
-- Number
-- Indicates minimum outputted pages of crawler to checks if attribute is set.
-
-
-#### `jsonSchema`
-- Object
-- If jsonSchema is set act check all sample results against schema.
-
-
-#### `compareWithPreviousExecution`
-- Boolean
-- If compareWithPreviousExecution is set to `true` act compare results with previous execution.
-- If `tag` for execution is set compare act result from previous results with same tag.
-
-### `notifyTo`
-- String
-- Mail where act send notification if found error
-
-#### `runActOnSuccess`
-- Object
-- If act found errors runs this act.
-- Example:
-```javascript
+Then you need to set up payload template for webhook data like:
+```
 {
-    "id": "apify/send-mail",
-    "input": {
-        "to": "jakub.drobnik@apify.com",
-        "subject": "test on success",
-        "text": "No errors in crawler Amazon"
+    "actId": {{resource.actId}},
+    "runId": {{resource.id}},
+    "options": {
+      "notifyTo": "jakub.drobnik@apify.com",
+      "minOutputtedPages": 10
     }
 }
 ```
-NOTE: If you didn't set `input`, it set from input of main act and errors output.
 
-#### `runActOnError`
-- Object
-- If didn't find any errors runs this act.
-- Same format as `runActOnSuccess`
+## Actor
 
-## Usage Act
-
-You can call it from other Act, for example:
+You can call it from other Actor, for example:
 ```javascript
 await Apify.call('drobnikj/check-crawler-results', {
     actId: 's7Jj8ik07gfV',
@@ -72,13 +47,28 @@ await Apify.call('drobnikj/check-crawler-results', {
 });
 ```
 
+## Legacy Crawler DEPRECATED
+
+For a specific crawler set the following parameters:
+
+### Finish webhook URL (`finishWebhookUrl`)
+```
+https://api.apify.com/v2/acts/drobnikj~check-crawler-results/runs?token=APIFY_API_TOKEN
+```
+
+### Finish webhook data
+
+You can set up fields from [options](#options) to finish webhook data.
+
+## Fields
+
 ### `actId`
 - String
 - Act ID you want to check
 
 ### `runId`
 - String
-- Run ID of act you want to check
+- Run ID of actor you want to check
 
 ### `datasetId`
 - String
@@ -86,7 +76,67 @@ await Apify.call('drobnikj/check-crawler-results', {
 
 ### `options`
 - Object
-- Options for checking
-- There are same params as in `Finish webhook data` except `compareWithPreviousExecution`
-- `sampleCount`, `jsonSchema`, `notifyTo`, `runActOnSuccess`, `runActOnError`
+
+#### `options.sampleCount`
+- Number
+- Number of results that actor checks
+- Default is 100000
+
+
+#### `options.minOutputtedPages`
+- Number
+- Indicates minimum outputted pages of crawler to checks if an attribute is set.
+
+
+#### `options.jsonSchema`
+- Object
+- If jsonSchema is set actor check all sample results against schema.
+
+
+#### `options.compareWithPreviousExecution`
+- Boolean
+- If compareWithPreviousExecution is set to `true` actor compare results with a previous execution.
+- If `tag` for execution is set compare actor result from previous results with the same tag.
+- It works only for the legacy crawler.
+
+#### `options.notifyTo`
+- String
+- Mail where actor send notification if found error
+
+#### `options.runActOnSuccess`
+- Object
+- If actor found errors runs this actor.
+- Example:
+```json
+{
+    "id": "apify/send-mail",
+    "input": {
+        "to": "jakub.drobnik@apify.com",
+        "subject": "test on success",
+        "text": "No errors in crawler Amazon"
+    }
+}
+```
+NOTE: If you didn't set `input`, it set from input of main actor and errors output.
+
+#### `options.runActOnError`
+- Object
+- If didn't find any errors runs this actor.
+- Same format as `runActOnSuccess`
+
+# Output
+
+All found errors will be in the `errors` field.
+
+## Example output
+```json
+{
+  "errors": [
+    "Run is not in SUCCEEDED status, act status: ABORTED",
+    "Crawler returns only 0 outputted pages and minumum is 100"
+  ],
+  "executionAttrs": []
+}
+```
+
 

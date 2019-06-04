@@ -8,7 +8,7 @@ const {
 } = require('./email_templates');
 
 
-const DEFAULT_SAMPLE_COUNT = 1000;
+const DEFAULT_SAMPLE_COUNT = 100000;
 const OUTPUT_KEY  = 'OUTPUT';
 
 const parseFinishWebhookData = (json) => {
