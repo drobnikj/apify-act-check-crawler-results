@@ -85,7 +85,7 @@ You can set up fields from [options](#options) to finish webhook data.
 
 #### `options.minOutputtedPages`
 - Number
-- Indicates minimum outputted pages of crawler to checks if an attribute is set.
+- Indicates minimum outputted items to checks.
 
 
 #### `options.jsonSchema`
