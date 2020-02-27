@@ -1,6 +1,5 @@
-# Crawler results checker for Apify
-This actor checks crawler/scraper default dataset items and sends a notification if finds some errors.
-It is designed to run from webhook.
+# Scraper Results Checker
+This actor checks results from Apify's scrapers or any other actor that stores its result to a dataset, and sends a notification if there are errors. It's designed to run from webhook.
 
   * [Usage](#usage)
     * [Actor/Task webhook](#actor-or-task-webhook)
